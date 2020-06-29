@@ -1,4 +1,4 @@
-﻿/*! Xoshiro256 C v0.1 | CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/deed) */
+﻿/*! Xoshiro256 C v0.2 | CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/deed) */
 #ifndef _XOSHIRO256_H
 #define _XOSHIRO256_H
 #ifdef __cplusplus
@@ -9,6 +9,11 @@ typedef struct { unsigned long long s[4]; } XOSHIRO256;
 
 XOSHIRO256 Xoshiro256_Init_Int(unsigned long long seed);
 XOSHIRO256 Xoshiro256_Init_Array(unsigned long long* seed, int seed_length);
+
+/* Xoshiro256pp */
+unsigned long long Xoshiro256pp_Gen_Uint64(XOSHIRO256* data);
+long double Xoshiro256pp_Gen_Real(XOSHIRO256* data);
+unsigned long long Xoshiro256pp_Gen_Free(XOSHIRO256* data, unsigned long long num);
 
 /* Xoshiro256ss */
 unsigned long long Xoshiro256ss_Gen_Uint64(XOSHIRO256* data);
@@ -58,9 +63,10 @@ XOSHIRO256 Xoshiro256_Init_Array(unsigned long long* seed, int seed_length) {
 }
 
 #define rotl(x, k) ((x << k) | (x >> (64 - k)))
-/* Xoshiro256ss */
-unsigned long long Xoshiro256ss_Gen_Uint64(XOSHIRO256* data) {
-	const unsigned long long result_starstar = rotl(data->s[1] * 5, 7) * 9;
+
+/* Xoshiro256pp */
+unsigned long long Xoshiro256pp_Gen_Uint64(XOSHIRO256* data) {
+	const unsigned long long result = rotl((data->s[0] + data->s[3]), 23) + data->s[0];
 	const unsigned long long t = data->s[1] << 17;
 	data->s[2] ^= data->s[0];
 	data->s[3] ^= data->s[1];
@@ -68,14 +74,29 @@ unsigned long long Xoshiro256ss_Gen_Uint64(XOSHIRO256* data) {
 	data->s[0] ^= data->s[3];
 	data->s[2] ^= t;
 	data->s[3] = rotl(data->s[3], 45);
-	return result_starstar;
+	return result;
+}
+long double Xoshiro256pp_Gen_Real(XOSHIRO256* data) { return Xoshiro256pp_Gen_Uint64(data) / 18446744073709551616.0L; } /* [0,1) */
+unsigned long long Xoshiro256pp_Gen_Free(XOSHIRO256* data, unsigned long long num) { return num > 1 ? (unsigned long long)(Xoshiro256pp_Gen_Real(data) * num) : 0; } /* [0,num) */
+
+/* Xoshiro256ss */
+unsigned long long Xoshiro256ss_Gen_Uint64(XOSHIRO256* data) {
+	const unsigned long long result = rotl((data->s[1] * 5), 7) * 9;
+	const unsigned long long t = data->s[1] << 17;
+	data->s[2] ^= data->s[0];
+	data->s[3] ^= data->s[1];
+	data->s[1] ^= data->s[2];
+	data->s[0] ^= data->s[3];
+	data->s[2] ^= t;
+	data->s[3] = rotl(data->s[3], 45);
+	return result;
 }
 long double Xoshiro256ss_Gen_Real(XOSHIRO256* data) { return Xoshiro256ss_Gen_Uint64(data) / 18446744073709551616.0L; } /* [0,1) */
 unsigned long long Xoshiro256ss_Gen_Free(XOSHIRO256* data, unsigned long long num) { return num > 1 ? (unsigned long long)(Xoshiro256ss_Gen_Real(data) * num) : 0; } /* [0,num) */
 
 /* Xoshiro256p */
 unsigned long long Xoshiro256p_Gen_Uint64(XOSHIRO256* data) {
-	const unsigned long long result_plus = data->s[0] + data->s[3];
+	const unsigned long long result = data->s[0] + data->s[3];
 	const unsigned long long t = data->s[1] << 17;
 	data->s[2] ^= data->s[0];
 	data->s[3] ^= data->s[1];
@@ -83,7 +104,7 @@ unsigned long long Xoshiro256p_Gen_Uint64(XOSHIRO256* data) {
 	data->s[0] ^= data->s[3];
 	data->s[2] ^= t;
 	data->s[3] = rotl(data->s[3], 45);
-	return result_plus;
+	return result;
 }
 long double Xoshiro256p_Gen_Real(XOSHIRO256* data) { return Xoshiro256p_Gen_Uint64(data) / 18446744073709551616.0L; } /* [0,1) */
 unsigned long long Xoshiro256p_Gen_Free(XOSHIRO256* data, unsigned long long num) { return num > 1 ? (unsigned long long)(Xoshiro256p_Gen_Real(data) * num) : 0; } /* [0,num) */

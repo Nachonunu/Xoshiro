@@ -1,4 +1,4 @@
-﻿/*@license Xoshiro128 JS v0.1 | CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/deed) */
+﻿/*@license Xoshiro128 JS v0.2 | CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/deed) */
 function Xoshiro(seed) {
 	this.imul = (typeof Math.imul == "function") ? Math.imul : function(a, b) { return ((a * (b >>> 16)) << 16) + (a * (b & 0xffff)); };
 	this.s = new Uint32Array([123456789, 362436069, 521288629, 88675123]);
@@ -58,20 +58,21 @@ Xoshiro.prototype.Init_Array = function(seed) {
 	}
 }
 Xoshiro.prototype.GenUint32 = function() {
-	var s0 = this.s[0], s1 = this.s[1], s2 = this.s[2], s3 = this.s[3];
 	var rotl = function(x, k) { return (x << k) | (x >>> (32 - k)); };
 
-	var result_starstar = rotl(s0 * 5, 7) * 9;
-	var t = s1 << 9;
-	s2 = s2 ^ s0;
-	s3 = s3 ^ s1;
-	s1 = s1 ^ s2;
-	s0 = s0 ^ s3;
-	s2 = s2 ^ t;
-	s3 = rotl(s3, 11);
+	var result = rotl(this.s[0] + this.s[3], 7) + this.s[0]; //Xoshiro128pp
+	//var result = rotl(this.s[0] * 5, 7) * 9; //Xoshiro128ss
+	//var result = this.s[0] + this.s[3]; //Xoshiro128p
 
-	this.s[0] = s0; this.s[1] = s1; this.s[2] = s2; this.s[3] = s3;
-	return result_starstar >>> 0;
+	var t = this.s[1] << 9;
+	this.s[2] = this.s[2] ^ this.s[0];
+	this.s[3] = this.s[3] ^ this.s[1];
+	this.s[1] = this.s[1] ^ this.s[2];
+	this.s[0] = this.s[0] ^ this.s[3];
+	this.s[2] = this.s[2] ^ t;
+	this.s[3] = rotl(this.s[3], 11);
+
+	return result >>> 0;
 }
 Xoshiro.prototype.GenReal = function() { return this.GenUint32() * (1.0 / 4294967296.0); } //[0,1)
 Xoshiro.prototype.GenFree = function(num) { return num > 1 ? Math.floor(this.GenReal() * num) : 0; } //[0, num)

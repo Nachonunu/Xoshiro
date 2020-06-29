@@ -1,4 +1,4 @@
-﻿/*! Xoshiro128 C v0.1 | CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/deed) */
+﻿/*! Xoshiro128 C v0.2 | CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/deed) */
 #ifndef _XOSHIRO_H
 #define _XOSHIRO_H
 #ifdef __cplusplus
@@ -12,9 +12,17 @@ XOSHIRO128 Xoshiro128_Init_Int(unsigned long seed);
 XOSHIRO128 Xoshiro128_Init_Array(unsigned long* seed, int seed_length);
 
 /* 乱数生成 */
+unsigned long Xoshiro128pp_Gen_Uint32(XOSHIRO128* data);
+double Xoshiro128pp_Gen_Real(XOSHIRO128* data);
+unsigned long Xoshiro128pp_Gen_Free(XOSHIRO128* data, unsigned long num);
+
 unsigned long Xoshiro128ss_Gen_Uint32(XOSHIRO128* data);
 double Xoshiro128ss_Gen_Real(XOSHIRO128* data);
 unsigned long Xoshiro128ss_Gen_Free(XOSHIRO128* data, unsigned long num);
+
+unsigned long Xoshiro128p_Gen_Uint32(XOSHIRO128* data);
+double Xoshiro128p_Gen_Real(XOSHIRO128* data);
+unsigned long Xoshiro128p_Gen_Free(XOSHIRO128* data, unsigned long num);
 
 #ifdef __cplusplus
 }
@@ -72,8 +80,7 @@ XOSHIRO128 Xoshiro128_Init_Int(unsigned long seed) {
 	return data;
 }
 XOSHIRO128 Xoshiro128_Init_Array(unsigned long* seed, int seed_length) {
-	if (seed_length <= 0) { return Xoshiro128_Init_Int(0); }
-	else if (seed_length == 1) { return Xoshiro128_Init_Int(seed[0]); }
+	if (seed_length <= 1) return Xoshiro128_Init_Int(seed_length == 1 ? seed[0] : 0);
 	unsigned long long out;
 	XOSHIRO128 data;
 #ifdef _32BIT_ONLY
@@ -109,8 +116,10 @@ XOSHIRO128 Xoshiro128_Init_Array(unsigned long* seed, int seed_length) {
 }
 /* 乱数生成 */
 #define rotl(x, k) ((x << k) | (x >> (32 - k)))
-unsigned long Xoshiro128ss_Gen_Uint32(XOSHIRO128* data) {
-	const unsigned long result_starstar = rotl(data->s[0] * 5, 7) * 9;
+
+/* XorShift128pp */
+unsigned long Xoshiro128pp_Gen_Uint32(XOSHIRO128* data) {
+	const unsigned long result = rotl((data->s[0] + data->s[3]), 7) + data->s[0];
 	const unsigned long t = data->s[1] << 9;
 	data->s[2] ^= data->s[0];
 	data->s[3] ^= data->s[1];
@@ -118,10 +127,40 @@ unsigned long Xoshiro128ss_Gen_Uint32(XOSHIRO128* data) {
 	data->s[0] ^= data->s[3];
 	data->s[2] ^= t;
 	data->s[3] = rotl(data->s[3], 11);
-	return result_starstar;
+	return result;
+}
+double Xoshiro128pp_Gen_Real(XOSHIRO128* data) { return Xoshiro128pp_Gen_Uint32(data) / 4294967296.0; } /* [0,1) */
+unsigned long Xoshiro128pp_Gen_Free(XOSHIRO128* data, unsigned long num) { return num > 1 ? (unsigned long)(Xoshiro128pp_Gen_Real(data) * num) : 0; } /* [0,num) */
+
+/* XorShift128ss */
+unsigned long Xoshiro128ss_Gen_Uint32(XOSHIRO128* data) {
+	const unsigned long result = rotl((data->s[0] * 5), 7) * 9;
+	const unsigned long t = data->s[1] << 9;
+	data->s[2] ^= data->s[0];
+	data->s[3] ^= data->s[1];
+	data->s[1] ^= data->s[2];
+	data->s[0] ^= data->s[3];
+	data->s[2] ^= t;
+	data->s[3] = rotl(data->s[3], 11);
+	return result;
 }
 double Xoshiro128ss_Gen_Real(XOSHIRO128* data) { return Xoshiro128ss_Gen_Uint32(data) / 4294967296.0; } /* [0,1) */
 unsigned long Xoshiro128ss_Gen_Free(XOSHIRO128* data, unsigned long num) { return num > 1 ? (unsigned long)(Xoshiro128ss_Gen_Real(data) * num) : 0; } /* [0,num) */
+
+/* XorShift128p */
+unsigned long Xoshiro128p_Gen_Uint32(XOSHIRO128* data) {
+	const unsigned long result = data->s[0] + data->s[3];
+	const unsigned long t = data->s[1] << 9;
+	data->s[2] ^= data->s[0];
+	data->s[3] ^= data->s[1];
+	data->s[1] ^= data->s[2];
+	data->s[0] ^= data->s[3];
+	data->s[2] ^= t;
+	data->s[3] = rotl(data->s[3], 11);
+	return result;
+}
+double Xoshiro128p_Gen_Real(XOSHIRO128* data) { return Xoshiro128p_Gen_Uint32(data) / 4294967296.0; } /* [0,1) */
+unsigned long Xoshiro128p_Gen_Free(XOSHIRO128* data, unsigned long num) { return num > 1 ? (unsigned long)(Xoshiro128p_Gen_Real(data) * num) : 0; } /* [0,num) */
 
 #endif /* _XOSHIRO_IMPLEMENTATION */
 

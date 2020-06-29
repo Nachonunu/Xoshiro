@@ -5,7 +5,7 @@
 
 int main() {
 	unsigned long s[5] = { 1,2,3,4,5 };
-	Xoshiro<> rnd(s, 5);
+	Xoshiro128pp<> rnd(s, 5);
 
 	for (int i = 0; i < 100; ++i) printf("%lu\n", rnd());
 	

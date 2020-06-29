@@ -4,7 +4,7 @@
 
 int main() {
 	unsigned long long a[5] = {1,2,3,4,5};
-	Xoshiro256ss<> rnd(a, 5);
+	Xoshiro256pp<> rnd(a, 5);
 	for (int i = 0; i < 100; ++i) printf("%llu\n", rnd());
 	XOSHIRO256 seed = rnd.SaveData();
 	printf("seed %llu\n", seed.s[0]);
